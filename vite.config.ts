@@ -7,15 +7,10 @@ export default defineConfig({
   plugins: [Vue()],
 
   build: {
-    // Output compiled files to /dist.
     outDir: "./dist",
     lib: {
-      // Set the entry point (file that contains our components exported).
       entry: resolve(__dirname, "src/index.ts"),
-      // Name of the library.
       name: "vue3-drag-resize",
-      // We are building for CJS and ESM, use a function to rename automatically files.
-      // Example: vue3-drag-resize.esm.js
       fileName: (format) => `${"vue3-drag-resize"}.${format}.js`,
     },
     rollupOptions: {
