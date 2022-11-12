@@ -18,10 +18,14 @@ const props = withDefaults(
   defineProps<{
     parentWidth: number;
     parentHeight: number;
+    minWidth?: number;
+    minHeight?: number;
     hasBorder?: boolean;
     borderColor?: string;
   }>(),
   {
+    minWidth: 0,
+    minHeight: 0,
     hasBorder: true,
     borderColor: `black`,
   }
@@ -33,8 +37,6 @@ const SELECTORS: Readonly<string[]> = [
   `bottom-left`,
   `bottom-right`,
 ];
-const MIN_WIDTH: number = 100;
-
 const selectedSelector: Ref<string> = ref(``);
 const isSelectedPressed: Ref<boolean> = ref(false);
 
@@ -95,7 +97,7 @@ onMounted(() => {
       .addEventListener(`mousedown`, (event: MouseEvent) => {
         event?.stopPropagation();
         event?.preventDefault();
-        selectedSelector.value = String(selector);
+        selectedSelector.value = selector;
         isSelectedPressed.value = true;
 
         calcResizeLimits();
@@ -125,10 +127,13 @@ const saveDimensionsBeforeMove: { (mousePosition: MousePosition): void } = ({
 
 const calcResizeLimits: { (): void } = () => {
   limits.value = {
-    left: Math.max(dimensions.value.left + width.value - MIN_WIDTH, 0),
-    right: Math.max(dimensions.value.right + width.value - MIN_WIDTH, 0),
-    top: Math.max(dimensions.value.top + width.value - MIN_WIDTH, 0),
-    bottom: Math.max(dimensions.value.bottom + width.value - MIN_WIDTH, 0),
+    left: Math.max(dimensions.value.left + width.value - props.minWidth, 0),
+    right: Math.max(dimensions.value.right + width.value - props.minWidth, 0),
+    top: Math.max(dimensions.value.top + width.value - props.minHeight, 0),
+    bottom: Math.max(
+      dimensions.value.bottom + width.value - props.minHeight,
+      0
+    ),
   };
 };
 const move: { (event: MouseEvent): void } = (event: MouseEvent) => {
