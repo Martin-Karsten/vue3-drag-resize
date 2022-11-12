@@ -6,5 +6,8 @@
     "composite": true,
     "baseUrl": ".",
     "lib": ["ESNext", "dom"],
+    "paths": {
+      "@/*": ["./src/*"],
+    }
   }
 }

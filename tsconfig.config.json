@@ -5,5 +5,8 @@
     "composite": true,
     "types": ["node"],
     "lib": ["ESNext"],
+    "paths": {
+      "@/*": ["./src/*"],
+    }
   }
 }

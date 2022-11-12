@@ -1,11 +1,16 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import Vue from "@vitejs/plugin-vue";
+import { fileURLToPath, URL } from "url";
 
 export default defineConfig({
-  // If our .vue files have a style, it will be compiled as a single `.css` file under /dist.
   plugins: [Vue()],
 
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
   build: {
     outDir: "./dist",
     lib: {

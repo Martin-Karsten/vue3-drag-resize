@@ -12,8 +12,8 @@ import type {
   SizeStyle,
   Dimensions,
   MousePosition,
-} from "../../typings/ResizeContainer";
-import { SelectorPositions } from "../../enums/enumMap";
+} from "@/typings/ResizeContainer";
+import { SelectorPositions } from "@/enums/enumMap";
 
 const props = withDefaults(
   defineProps<{
