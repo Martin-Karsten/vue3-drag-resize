@@ -13,6 +13,7 @@ import type {
   Dimensions,
   MousePosition,
 } from "../../typings/ResizeContainer";
+import { SelectorPositions } from "../../enums/enumMap";
 
 const props = withDefaults(
   defineProps<{
@@ -31,12 +32,6 @@ const props = withDefaults(
   }
 );
 
-const SELECTORS: Readonly<string[]> = [
-  `top-left`,
-  `top-right`,
-  `bottom-left`,
-  `bottom-right`,
-];
 const selectedSelector: Ref<string> = ref(``);
 const isSelectedPressed: Ref<boolean> = ref(false);
 
@@ -91,7 +86,7 @@ onMounted(() => {
   dimensions.value.bottom =
     props.parentHeight - height.value - dimensions.value.top;
 
-  for (const selector of SELECTORS) {
+  for (const selector of Object.values(SelectorPositions)) {
     document
       .getElementById(selector)!
       .addEventListener(`mousedown`, (event: MouseEvent) => {
@@ -242,7 +237,7 @@ onBeforeUnmount(() => {
     <slot />
 
     <div
-      v-for="selector of SELECTORS"
+      v-for="selector in SelectorPositions"
       :key="selector"
       :id="selector"
       :class="`selector__${selector}`"
