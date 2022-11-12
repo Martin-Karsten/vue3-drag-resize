@@ -7,7 +7,9 @@ import ResizeContainer from "../src/components/ResizeContainer/ResizeContainer.v
     <h1>Welcome to your your sandbox environment</h1>
   </main>
 
-  <ResizeContainer> I am Resizable </ResizeContainer>
+  <ResizeContainer :parentWidth="250" :parentHeight="250">
+    Resize Me
+  </ResizeContainer>
 </template>
 
 <style lang="scss" scoped></style>

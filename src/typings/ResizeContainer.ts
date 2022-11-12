@@ -15,4 +15,9 @@ interface Dimensions {
   bottom: number;
 }
 
-export type { PositionStyle, SizeStyle, Dimensions };
+interface MousePosition {
+  pointerX: number;
+  pointerY: number;
+}
+
+export type { PositionStyle, SizeStyle, Dimensions, MousePosition };

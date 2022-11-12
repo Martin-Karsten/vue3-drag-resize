@@ -1,13 +1,23 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, ref, type Ref } from "vue";
+import {
+  computed,
+  type ComputedRef,
+  ref,
+  type Ref,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
 import type {
   PositionStyle,
   SizeStyle,
   Dimensions,
+  MousePosition,
 } from "../../typings/ResizeContainer";
 
 const props = withDefaults(
   defineProps<{
+    parentWidth: number;
+    parentHeight: number;
     hasBorder?: boolean;
     borderColor?: string;
   }>(),
@@ -16,6 +26,17 @@ const props = withDefaults(
     borderColor: `black`,
   }
 );
+
+const SELECTORS: Readonly<string[]> = [
+  `top-left`,
+  `top-right`,
+  `bottom-left`,
+  `bottom-right`,
+];
+const MIN_WIDTH: number = 100;
+
+const selectedSelector: Ref<string> = ref(``);
+const isSelectedPressed: Ref<boolean> = ref(false);
 
 const dimensionsBeforeMove: Ref<Dimensions> = ref({
   left: 100,
@@ -31,11 +52,24 @@ const dimensions: Ref<Dimensions> = ref({
   right: 0,
 });
 
-const pointerX: Ref<number> = ref(0);
-const pointerY: Ref<number> = ref(0);
+const limits: Ref<Dimensions> = ref({
+  left: 0,
+  top: 0,
+  bottom: 0,
+  right: 0,
+});
 
-const width: ComputedRef<number> = computed(() => 500);
-const height: ComputedRef<number> = computed(() => 500);
+const currentMousePosition: Ref<MousePosition> = ref({
+  pointerX: 0,
+  pointerY: 0,
+});
+
+const width: ComputedRef<number> = computed(
+  () => props.parentWidth - dimensions.value.left - dimensions.value.right
+);
+const height: ComputedRef<number> = computed(
+  () => props.parentHeight - dimensions.value.top - dimensions.value.bottom
+);
 const sizeStyle: ComputedRef<SizeStyle> = computed(() => {
   return {
     width: `${width.value}px`,
@@ -47,6 +81,146 @@ const positionStyle: ComputedRef<PositionStyle> = computed(() => {
     top: `${dimensions.value.top}px`,
     left: `${dimensions.value.left}px`,
   };
+});
+
+onMounted(() => {
+  dimensions.value.right =
+    props.parentWidth - width.value - dimensions.value.left;
+  dimensions.value.bottom =
+    props.parentHeight - height.value - dimensions.value.top;
+
+  for (const selector of SELECTORS) {
+    document
+      .getElementById(selector)!
+      .addEventListener(`mousedown`, (event: MouseEvent) => {
+        event?.stopPropagation();
+        event?.preventDefault();
+        selectedSelector.value = String(selector);
+        isSelectedPressed.value = true;
+
+        calcResizeLimits();
+
+        saveDimensionsBeforeMove({
+          pointerX: event.pageX,
+          pointerY: event.pageY,
+        });
+      });
+  }
+
+  addEvents();
+});
+
+const saveDimensionsBeforeMove: { (mousePosition: MousePosition): void } = ({
+  pointerX,
+  pointerY,
+}) => {
+  currentMousePosition.value.pointerX = pointerX;
+  currentMousePosition.value.pointerY = pointerY;
+
+  dimensionsBeforeMove.value.left = dimensions.value.left;
+  dimensionsBeforeMove.value.right = dimensions.value.right;
+  dimensionsBeforeMove.value.top = dimensions.value.top;
+  dimensionsBeforeMove.value.bottom = dimensions.value.bottom;
+};
+
+const calcResizeLimits: { (): void } = () => {
+  limits.value = {
+    left: Math.max(dimensions.value.left + width.value - MIN_WIDTH, 0),
+    right: Math.max(dimensions.value.right + width.value - MIN_WIDTH, 0),
+    top: Math.max(dimensions.value.top + width.value - MIN_WIDTH, 0),
+    bottom: Math.max(dimensions.value.bottom + width.value - MIN_WIDTH, 0),
+  };
+};
+const move: { (event: MouseEvent): void } = (event: MouseEvent) => {
+  event.stopPropagation();
+  if (isSelectedPressed.value) {
+    drag({
+      left: currentMousePosition.value.pointerX - event.pageX,
+      top: currentMousePosition.value.pointerY - event.pageY,
+    });
+  }
+};
+const drag: { (delta: Pick<Dimensions, `left` | `top`>): void } = (delta) => {
+  positionCorrectionByLimit(getResizedValues(delta));
+};
+const positionCorrectionByLimit: { (newDimension: Dimensions): void } = (
+  newDimension
+) => {
+  dimensions.value.left = getSideCorrectionsByLimit(
+    limits.value.left,
+    newDimension.left
+  );
+  dimensions.value.right = getSideCorrectionsByLimit(
+    limits.value.right,
+    newDimension.right
+  );
+  dimensions.value.top = getSideCorrectionsByLimit(
+    limits.value.top,
+    newDimension.top
+  );
+  dimensions.value.bottom = getSideCorrectionsByLimit(
+    limits.value.bottom,
+    newDimension.bottom
+  );
+};
+const getSideCorrectionsByLimit: {
+  (limit: number, currentLimit: number): number;
+} = (limit, currentLimit) => {
+  if (limit && currentLimit < 0) {
+    return 0;
+  } else if (limit < currentLimit) {
+    return limit;
+  }
+
+  return currentLimit;
+};
+const getResizedValues: {
+  (delta: Pick<Dimensions, `left` | `top`>): Dimensions;
+} = (delta) => {
+  const newDimension: Dimensions = {
+    top: dimensionsBeforeMove.value.top,
+    bottom: dimensionsBeforeMove.value.bottom,
+    left: dimensionsBeforeMove.value.left,
+    right: dimensionsBeforeMove.value.right,
+  };
+
+  if (selectedSelector.value.includes(`bottom`)) {
+    newDimension.bottom = dimensionsBeforeMove.value.bottom + delta.top;
+  }
+  if (selectedSelector.value.includes(`top`)) {
+    newDimension.top = dimensionsBeforeMove.value.top - delta.top;
+  }
+  if (selectedSelector.value.includes(`right`)) {
+    newDimension.right = dimensionsBeforeMove.value.right + delta.left;
+  }
+  if (selectedSelector.value.includes(`left`)) {
+    newDimension.left = dimensionsBeforeMove.value.left - delta.left;
+  }
+
+  return newDimension;
+};
+const deselectSelector: { (): void } = (): void => {
+  isSelectedPressed.value = false;
+};
+
+const addEvents: { (): void } = () => {
+  EVENT_MAP.forEach((callback, eventName) =>
+    document.documentElement.addEventListener(eventName, callback)
+  );
+};
+const removeEvents: { (): void } = () => {
+  EVENT_MAP.forEach((callback, eventName) =>
+    document.documentElement.addEventListener(eventName, callback)
+  );
+};
+
+const EVENT_MAP: Readonly<Map<string, any>> = new Map([
+  [`mousemove`, move],
+  [`mouseup`, deselectSelector],
+]);
+
+onBeforeUnmount(() => {
+  removeEvents();
 });
 </script>
 
@@ -62,19 +236,20 @@ const positionStyle: ComputedRef<PositionStyle> = computed(() => {
   >
     <slot />
 
-    <div class="selector selector__top-left"></div>
-    <div class="selector selector__top-right"></div>
-    <div class="selector selector__bottom-left"></div>
-    <div class="selector selector__bottom-right"></div>
+    <div
+      v-for="selector of SELECTORS"
+      :key="selector"
+      :id="selector"
+      :class="`selector__${selector}`"
+      class="selector"
+    ></div>
   </div>
 </template>
 
 <style scoped lang="scss">
 .resizeContainer {
   height: 100px;
-  left: 500px;
   position: absolute;
-  top: 500px;
   width: 100px;
   border: 1px solid;
 }
