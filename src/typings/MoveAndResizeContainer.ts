@@ -20,4 +20,6 @@ interface MousePosition {
   pointerY: number;
 }
 
-export type { PositionStyle, SizeStyle, Dimensions, MousePosition };
+type LeftAndTop = Pick<Dimensions, `left` | `top`>;
+
+export type { PositionStyle, SizeStyle, Dimensions, MousePosition, LeftAndTop };

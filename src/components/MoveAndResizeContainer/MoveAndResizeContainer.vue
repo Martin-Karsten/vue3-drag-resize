@@ -12,7 +12,8 @@ import type {
   SizeStyle,
   Dimensions,
   MousePosition,
-} from "@/typings/ResizeContainer";
+  LeftAndTop,
+} from "@/typings/MoveAndResizeContainer";
 import { SelectorPositions } from "@/enums/enumMap";
 
 const props = withDefaults(
@@ -32,29 +33,22 @@ const props = withDefaults(
   }
 );
 
-const selectedSelector: Ref<string> = ref(``);
-const isSelectedPressed: Ref<boolean> = ref(false);
+const selectedDragSelector: Ref<string> = ref(``);
+const isDragSelectorPressed: Ref<boolean> = ref(false);
+const isBodyPressed: Ref<boolean> = ref(false);
 
-const dimensionsBeforeMove: Ref<Dimensions> = ref({
-  left: 100,
-  top: 100,
-  bottom: 0,
-  right: 0,
-});
+const getInitialDimensions: { (): Dimensions } = () => {
+  return {
+    left: 0,
+    top: 0,
+    bottom: 0,
+    right: 0,
+  };
+};
 
-const dimensions: Ref<Dimensions> = ref({
-  left: 0,
-  top: 0,
-  bottom: 0,
-  right: 0,
-});
-
-const limits: Ref<Dimensions> = ref({
-  left: 0,
-  top: 0,
-  bottom: 0,
-  right: 0,
-});
+const dimensionsBeforeMove: Ref<Dimensions> = ref(getInitialDimensions());
+const dimensions: Ref<Dimensions> = ref(getInitialDimensions());
+const limits: Ref<Dimensions> = ref(getInitialDimensions());
 
 const currentMousePosition: Ref<MousePosition> = ref({
   pointerX: 0,
@@ -86,14 +80,26 @@ onMounted(() => {
   dimensions.value.bottom =
     props.parentHeight - height.value - dimensions.value.top;
 
+  document
+    .getElementById(`moveAndResizeContainer`)!
+    .addEventListener(`mousedown`, (event: MouseEvent) => {
+      isBodyPressed.value = true;
+
+      calcResizeLimits();
+
+      saveDimensionsBeforeMove({
+        pointerX: event.pageX,
+        pointerY: event.pageY,
+      });
+    });
   for (const selector of Object.values(SelectorPositions)) {
     document
       .getElementById(selector)!
       .addEventListener(`mousedown`, (event: MouseEvent) => {
         event?.stopPropagation();
         event?.preventDefault();
-        selectedSelector.value = selector;
-        isSelectedPressed.value = true;
+        selectedDragSelector.value = selector;
+        isDragSelectorPressed.value = true;
 
         calcResizeLimits();
 
@@ -133,14 +139,28 @@ const calcResizeLimits: { (): void } = () => {
 };
 const move: { (event: MouseEvent): void } = (event: MouseEvent) => {
   event.stopPropagation();
-  if (isSelectedPressed.value) {
-    drag({
-      left: currentMousePosition.value.pointerX - event.pageX,
-      top: currentMousePosition.value.pointerY - event.pageY,
-    });
+  const delta: LeftAndTop = {
+    left: currentMousePosition.value.pointerX - event.pageX,
+    top: currentMousePosition.value.pointerY - event.pageY,
+  };
+  if (isDragSelectorPressed.value) {
+    drag(delta);
+  } else if (isBodyPressed.value) {
+    moveBody(delta);
   }
 };
-const drag: { (delta: Pick<Dimensions, `left` | `top`>): void } = (delta) => {
+const moveBody: { (delta: LeftAndTop): void } = (delta) => {
+  positionCorrectionByLimit(getMovedValues(delta));
+};
+const getMovedValues: { (delta: LeftAndTop): Dimensions } = (delta) => {
+  return {
+    top: dimensionsBeforeMove.value.top - delta.top,
+    bottom: dimensionsBeforeMove.value.bottom + delta.top,
+    left: dimensionsBeforeMove.value.left - delta.left,
+    right: dimensionsBeforeMove.value.right + delta.left,
+  };
+};
+const drag: { (delta: LeftAndTop): void } = (delta) => {
   positionCorrectionByLimit(getResizedValues(delta));
 };
 const positionCorrectionByLimit: { (newDimension: Dimensions): void } = (
@@ -175,7 +195,7 @@ const getSideCorrectionsByLimit: {
   return currentLimit;
 };
 const getResizedValues: {
-  (delta: Pick<Dimensions, `left` | `top`>): Dimensions;
+  (delta: LeftAndTop): Dimensions;
 } = (delta) => {
   const newDimension: Dimensions = {
     top: dimensionsBeforeMove.value.top,
@@ -184,23 +204,24 @@ const getResizedValues: {
     right: dimensionsBeforeMove.value.right,
   };
 
-  if (selectedSelector.value.includes(`bottom`)) {
+  if (selectedDragSelector.value.includes(`bottom`)) {
     newDimension.bottom = dimensionsBeforeMove.value.bottom + delta.top;
   }
-  if (selectedSelector.value.includes(`top`)) {
+  if (selectedDragSelector.value.includes(`top`)) {
     newDimension.top = dimensionsBeforeMove.value.top - delta.top;
   }
-  if (selectedSelector.value.includes(`right`)) {
+  if (selectedDragSelector.value.includes(`right`)) {
     newDimension.right = dimensionsBeforeMove.value.right + delta.left;
   }
-  if (selectedSelector.value.includes(`left`)) {
+  if (selectedDragSelector.value.includes(`left`)) {
     newDimension.left = dimensionsBeforeMove.value.left - delta.left;
   }
 
   return newDimension;
 };
-const deselectSelector: { (): void } = (): void => {
-  isSelectedPressed.value = false;
+const deselect: { (): void } = (): void => {
+  isDragSelectorPressed.value = false;
+  isBodyPressed.value = false;
 };
 
 const addEvents: { (): void } = () => {
@@ -216,7 +237,8 @@ const removeEvents: { (): void } = () => {
 
 const EVENT_MAP: Readonly<Map<string, any>> = new Map([
   [`mousemove`, move],
-  [`mouseup`, deselectSelector],
+  [`mouseup`, deselect],
+  [`mouseleave`, deselect],
 ]);
 
 onBeforeUnmount(() => {
@@ -226,7 +248,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="resizeContainer"
+    class="moveAndResizeContainer"
+    id="moveAndResizeContainer"
     :style="[
       { ...positionStyle },
       { ...sizeStyle },
@@ -247,7 +270,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
-.resizeContainer {
+.moveAndResizeContainer {
   height: 100px;
   position: absolute;
   width: 100px;

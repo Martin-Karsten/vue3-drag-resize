@@ -1,3 +1,3 @@
-import HelloWorld from "./components/HelloWorld.vue";
+import MoveAndResizeContainer from "./components/MoveAndResizeContainer.vue";
 
-export { HelloWorld };
+export { MoveAndResizeContainer };
