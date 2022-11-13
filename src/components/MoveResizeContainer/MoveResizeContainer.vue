@@ -13,7 +13,7 @@ import type {
   Dimensions,
   MousePosition,
   LeftAndTop,
-} from "@/typings/MoveAndResizeContainer";
+} from "@/typings/MoveResizeContainer";
 import { SelectorPositions } from "@/enums/enumMap";
 
 const props = withDefaults(
@@ -81,7 +81,7 @@ onMounted(() => {
     props.parentHeight - height.value - dimensions.value.top;
 
   document
-    .getElementById(`moveAndResizeContainer`)!
+    .getElementById(`moveResizeContainer`)!
     .addEventListener(`mousedown`, (event: MouseEvent) => {
       isBodyPressed.value = true;
 
@@ -248,8 +248,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="moveAndResizeContainer"
-    id="moveAndResizeContainer"
+    class="moveResizeContainer"
+    id="moveResizeContainer"
     :style="[
       { ...positionStyle },
       { ...sizeStyle },
@@ -270,7 +270,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
-.moveAndResizeContainer {
+.moveResizeContainer {
   height: 100px;
   position: absolute;
   width: 100px;

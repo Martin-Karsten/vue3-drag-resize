@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MoveAndResizeContainer from "../src/components/MoveAndResizeContainer/MoveAndResizeContainer.vue";
+import MoveResizeContainer from "../src/components/MoveResizeContainer/MoveResizeContainer.vue";
 </script>
 
 <template>
@@ -7,9 +7,9 @@ import MoveAndResizeContainer from "../src/components/MoveAndResizeContainer/Mov
     <h1>Welcome to your your sandbox environment</h1>
   </main>
 
-  <MoveAndResizeContainer :parentWidth="250" :parentHeight="250">
+  <MoveResizeContainer :parentWidth="250" :parentHeight="250">
     Resize Me
-  </MoveAndResizeContainer>
+  </MoveResizeContainer>
 </template>
 
 <style lang="scss" scoped></style>

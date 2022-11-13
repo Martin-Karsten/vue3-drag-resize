@@ -1,3 +1,3 @@
-import MoveAndResizeContainer from "./components/MoveAndResizeContainer.vue";
+import MoveResizeContainer from "./components/MoveResizeContainer.vue";
 
-export { MoveAndResizeContainer };
+export { MoveResizeContainer };
